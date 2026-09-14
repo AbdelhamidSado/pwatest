@@ -1,0 +1,7 @@
+# Ignorar archivos del frontend/wrapper para que NO se suban al servidor de Google Apps Script
+sw.js
+manifest.json
+embed-google-sites.html
+Error.jpeg
+.git
+.gitignore

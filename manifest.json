@@ -1,0 +1,19 @@
+{
+  "name": "Calcula · Calculadora en la Nube",
+  "short_name": "Calcula",
+  "description": "Calculadora científica inteligente con historial en la nube.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#6C63FF",
+  "theme_color": "#6C63FF",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='110' fill='%236C63FF'/%3E%3Crect x='128' y='128' width='256' height='256' rx='36' fill='white' opacity='.15'/%3E%3Crect x='150' y='155' width='212' height='95' rx='16' fill='white' opacity='.92'/%3E%3Ctext x='256' y='222' text-anchor='middle' font-family='monospace' font-size='52' font-weight='700' fill='%236C63FF'%3E42%3C/text%3E%3Ccircle cx='188' cy='318' r='24' fill='white' opacity='.75'/%3E%3Ccircle cx='256' cy='318' r='24' fill='white' opacity='.75'/%3E%3Ccircle cx='324' cy='318' r='24' fill='%23FFD3B6' opacity='.9'/%3E%3Ccircle cx='188' cy='378' r='24' fill='white' opacity='.75'/%3E%3Ccircle cx='256' cy='378' r='24' fill='white' opacity='.75'/%3E%3Ccircle cx='324' cy='378' r='24' fill='%236C63FF' opacity='.6'/%3E%3C/svg%3E",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
