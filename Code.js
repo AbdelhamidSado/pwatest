@@ -18,15 +18,15 @@ function getCalcSheet()   { return getSS().getSheetByName('calculos'); }
 
 // ── Punto de entrada HTTP ─────────────────────────────────
 /**
- * Sirve la PWA (Index.html) como Web App.
+ * Sirve la PWA (index.html) como Web App.
  * - IFRAME sandbox: permite PWA features, localStorage, etc.
  * - ALLOWALL: permite embeber en Google Sites u otros frames.
  */
 function doGet(e) {
   // Nota: addMetaTag() solo acepta 'viewport' en HtmlService.
-  // El resto de meta tags (PWA, Apple, theme-color) están en el <head> de Index.html.
+  // El resto de meta tags (PWA, Apple, theme-color) están en el <head> de index.html.
   return HtmlService
-    .createHtmlOutputFromFile('Index')
+    .createHtmlOutputFromFile('index')
     .setTitle('Calcula · App')
     .setSandboxMode(HtmlService.SandboxMode.IFRAME)
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
