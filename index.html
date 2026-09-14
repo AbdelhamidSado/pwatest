@@ -1,1992 +1,651 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="description" content="Calculadora científica con historial en la nube. Guardá y revisá todos tus cálculos.">
+  <meta name="description" content="Calculadora científica inteligente con historial en la nube.">
   <meta name="theme-color" content="#6C63FF">
+
+  <!-- PWA meta tags para Android e iOS -->
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Calcula">
-  <meta name="mobile-web-app-capable" content="yes">
   <meta name="application-name" content="Calcula">
-  <title>Calcula · App</title>
 
-  <!-- Google Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap" rel="stylesheet">
+  <!-- Enlace al manifiesto PWA -->
+  <link rel="manifest" href="manifest.json">
+
+  <title>Calcula · App PWA</title>
 
   <style>
-    /* ═══════════════════════════════════════════════════════
-       DESIGN TOKENS
-    ═══════════════════════════════════════════════════════ */
-    :root {
-      --cream:       #F8F7FF;
-      --white:       #FFFFFF;
-      --violet:      #6C63FF;
-      --violet-lt:   #EAE8FF;
-      --violet-dk:   #4B44CC;
-      --violet-xdk:  #3730A3;
-      --coral:       #FF6B6B;
-      --coral-lt:    #FFE8E8;
-      --mint:        #A8E6CF;
-      --mint-dk:     #52C99B;
-      --peach:       #FFD3B6;
-      --peach-dk:    #FF9A5C;
-      --lavender:    #C9C0FF;
-      --yellow:      #FFE566;
-      --sky:         #7DD3FC;
-      --text:        #1E1B2E;
-      --text-muted:  #7E7A9A;
-      --surface:     #FFFFFF;
-      --border:      #EBEBF0;
-      --shadow-sm:   0 2px 8px rgba(108,99,255,.08);
-      --shadow-md:   0 8px 32px rgba(108,99,255,.13);
-      --shadow-lg:   0 20px 60px rgba(108,99,255,.18);
-      --shadow-xl:   0 32px 80px rgba(108,99,255,.22);
-      --radius-sm:   12px;
-      --radius-md:   20px;
-      --radius-lg:   28px;
-      --radius-xl:   40px;
-      --transition:  all .22s cubic-bezier(.4,0,.2,1);
+    *,
+    *::before,
+    *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
     }
 
-    /* ═══════════════════════════════════════════════════════
-       RESET & BASE
-    ═══════════════════════════════════════════════════════ */
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html { scroll-behavior: smooth; -webkit-tap-highlight-color: transparent; }
+    html,
     body {
-      font-family: 'DM Sans', system-ui, sans-serif;
-      background: var(--cream);
-      color: var(--text);
-      min-height: 100dvh;
-      overflow-x: hidden;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #6C63FF;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     }
 
-    /* ═══════════════════════════════════════════════════════
-       UTILITY
-    ═══════════════════════════════════════════════════════ */
-    .hidden { display: none !important; }
-    .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
-
-    /* ═══════════════════════════════════════════════════════
-       TOAST NOTIFICATIONS
-    ═══════════════════════════════════════════════════════ */
-    #toast-container {
-      position: fixed;
-      bottom: 2rem;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 2000;
-      display: flex;
-      flex-direction: column;
-      gap: .5rem;
-      align-items: center;
-      pointer-events: none;
-    }
-    .toast {
-      background: var(--text);
-      color: #fff;
-      padding: .7rem 1.4rem;
-      border-radius: 50px;
-      font-size: .88rem;
-      font-weight: 500;
-      box-shadow: var(--shadow-md);
-      animation: toastIn .28s cubic-bezier(.34,1.56,.64,1);
-      pointer-events: none;
-      white-space: nowrap;
-    }
-    .toast.success { background: linear-gradient(135deg, #2f9e6f, #1d7a54); }
-    .toast.error   { background: linear-gradient(135deg, #d63d3d, #b52d2d); }
-    @keyframes toastIn {
-      from { opacity: 0; transform: translateY(16px) scale(.9); }
-      to   { opacity: 1; transform: translateY(0) scale(1); }
-    }
-
-    /* ═══════════════════════════════════════════════════════
-       SPINNER
-    ═══════════════════════════════════════════════════════ */
-    .spinner {
-      width: 44px; height: 44px;
-      border: 3px solid var(--violet-lt);
-      border-top-color: var(--violet);
-      border-radius: 50%;
-      animation: spin .75s linear infinite;
-    }
-    .spinner-sm {
-      width: 18px; height: 18px;
-      border: 2px solid rgba(255,255,255,.3);
-      border-top-color: #fff;
-      border-radius: 50%;
-      animation: spin .7s linear infinite;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    /* ═══════════════════════════════════════════════════════
-       ── LOADING SCREEN ─────────────────────────────────────
-    ═══════════════════════════════════════════════════════ */
-    #screen-loading {
+    /* ── Splash de carga ── */
+    #splash {
       position: fixed;
       inset: 0;
-      background: var(--white);
-      z-index: 1500;
+      background: linear-gradient(160deg, #6C63FF 0%, #4B44CC 100%);
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 2rem;
-      padding: 2rem;
-      transition: opacity .5s ease, transform .5s ease;
+      gap: 1.4rem;
+      z-index: 100;
+      transition: opacity .45s ease;
     }
-    #screen-loading.fade-out {
+
+    #splash.fade-out {
       opacity: 0;
-      transform: scale(1.04);
       pointer-events: none;
     }
 
-    /* Memphis illustration container */
-    .loading-illo {
-      width: 100%;
-      max-width: 280px;
+    /* Ilustración Memphis mini */
+    .splash-illo {
       position: relative;
+      width: 90px;
+      height: 90px;
+      margin-bottom: .5rem;
     }
-    .loading-illo svg {
+
+    .splash-illo svg {
       width: 100%;
-      height: auto;
+      height: 100%;
       overflow: visible;
     }
 
-    /* Animated floating shapes */
-    .illo-float-a { animation: floatA 3.2s ease-in-out infinite; }
-    .illo-float-b { animation: floatB 2.8s ease-in-out infinite .4s; }
-    .illo-float-c { animation: floatC 3.5s ease-in-out infinite .2s; }
-    .illo-pulse   { animation: illoP 2s ease-in-out infinite; }
-    @keyframes floatA {
-      0%,100% { transform: translateY(0); }
-      50%      { transform: translateY(-8px); }
-    }
-    @keyframes floatB {
-      0%,100% { transform: translateY(0) rotate(0deg); }
-      50%      { transform: translateY(-6px) rotate(5deg); }
-    }
-    @keyframes floatC {
-      0%,100% { transform: translateY(0) scale(1); }
-      50%      { transform: translateY(5px) scale(1.05); }
-    }
-    @keyframes illoP {
-      0%,100% { opacity: 1; }
-      50%      { opacity: .6; }
+    /* Shapes flotantes */
+    .f1 {
+      animation: f1 2.8s ease-in-out infinite;
     }
 
-    /* Brand text */
-    .loading-brand {
-      font-family: 'Outfit', sans-serif;
+    .f2 {
+      animation: f2 3.2s ease-in-out infinite .3s;
+    }
+
+    .f3 {
+      animation: f3 2.5s ease-in-out infinite .6s;
+    }
+
+    @keyframes f1 {
+
+      0%,
+      100% {
+        transform: translateY(0)
+      }
+
+      50% {
+        transform: translateY(-8px)
+      }
+    }
+
+    @keyframes f2 {
+
+      0%,
+      100% {
+        transform: translateY(0) rotate(0deg)
+      }
+
+      50% {
+        transform: translateY(-6px) rotate(8deg)
+      }
+    }
+
+    @keyframes f3 {
+
+      0%,
+      100% {
+        transform: scale(1)
+      }
+
+      50% {
+        transform: scale(1.1)
+      }
+    }
+
+    .splash-logo {
       font-size: 2rem;
       font-weight: 900;
-      color: var(--violet);
-      letter-spacing: -.04em;
-      display: flex;
-      align-items: center;
-      gap: .35rem;
-    }
-    .loading-brand-dot {
-      width: 10px; height: 10px;
-      background: var(--coral);
-      border-radius: 50%;
-      display: inline-block;
-      animation: dotBounce 1.4s ease-in-out infinite;
-    }
-    @keyframes dotBounce {
-      0%,100% { transform: translateY(0) scale(1); }
-      50%      { transform: translateY(-6px) scale(1.2); }
-    }
-    .loading-tagline {
-      font-size: .9rem;
-      color: var(--text-muted);
-      text-align: center;
-      margin-top: -.5rem;
-      font-weight: 400;
-      letter-spacing: .01em;
-    }
-
-    /* Progress bar */
-    .loading-bar-wrap {
-      width: 180px;
-      height: 4px;
-      background: var(--violet-lt);
-      border-radius: 4px;
-      overflow: hidden;
-    }
-    .loading-bar {
-      height: 100%;
-      background: linear-gradient(90deg, var(--violet), var(--lavender));
-      border-radius: 4px;
-      animation: loadingBar 1.8s ease-in-out infinite;
-    }
-    @keyframes loadingBar {
-      0%   { width: 0%;   margin-left: 0%; }
-      50%  { width: 60%;  margin-left: 20%; }
-      100% { width: 0%;   margin-left: 100%; }
-    }
-
-    /* ═══════════════════════════════════════════════════════
-       ── AUTH SCREEN ─────────────────────────────────────
-    ═══════════════════════════════════════════════════════ */
-    #screen-auth {
-      min-height: 100dvh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      padding: 1.25rem;
-      overflow-y: auto;
-      position: relative;
-    }
-
-    /* Memphis BG decorations */
-    .memphis-bg {
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      z-index: 0;
-      overflow: hidden;
-    }
-    .memphis-bg svg { position: absolute; }
-
-    .auth-wrapper {
-      width: 100%;
-      max-width: 420px;
-      background: var(--white);
-      border-radius: var(--radius-lg);
-      box-shadow: var(--shadow-xl);
-      border: 1px solid rgba(108,99,255,.1);
-      overflow: hidden;
-      position: relative;
-      z-index: 1;
-      animation: authCardIn .4s cubic-bezier(.34,1.36,.64,1);
-    }
-    @keyframes authCardIn {
-      from { opacity: 0; transform: translateY(24px) scale(.97); }
-      to   { opacity: 1; transform: translateY(0) scale(1); }
-    }
-
-    /* Auth card header band */
-    .auth-header-band {
-      background: linear-gradient(135deg, var(--violet) 0%, var(--violet-dk) 100%);
-      padding: 2rem 2rem 1.75rem;
-      text-align: center;
-      position: relative;
-      overflow: hidden;
-    }
-    .auth-header-band::before {
-      content: '';
-      position: absolute;
-      width: 140px; height: 140px;
-      background: rgba(255,255,255,.08);
-      border-radius: 50%;
-      top: -50px; right: -40px;
-    }
-    .auth-header-band::after {
-      content: '';
-      position: absolute;
-      width: 80px; height: 80px;
-      background: rgba(255,255,255,.06);
-      border-radius: 50%;
-      bottom: -20px; left: -20px;
-    }
-    .auth-logo {
-      font-family: 'Outfit', sans-serif;
-      font-size: 1.6rem;
-      font-weight: 900;
       color: #fff;
       letter-spacing: -.04em;
       display: flex;
       align-items: center;
-      justify-content: center;
       gap: .3rem;
-      position: relative;
-      z-index: 1;
-      margin-bottom: .3rem;
     }
-    .auth-logo-dot {
-      width: 8px; height: 8px;
-      background: var(--peach);
+
+    .splash-dot {
+      width: 10px;
+      height: 10px;
+      background: #FFD3B6;
       border-radius: 50%;
+      display: inline-block;
+      animation: dotBounce 1.3s ease-in-out infinite;
     }
-    .auth-header-sub {
+
+    @keyframes dotBounce {
+
+      0%,
+      100% {
+        transform: translateY(0) scale(1);
+      }
+
+      50% {
+        transform: translateY(-7px) scale(1.2);
+      }
+    }
+
+    .splash-tagline {
+      font-size: .85rem;
+      color: rgba(255, 255, 255, .65);
+      margin-top: -.8rem;
+    }
+
+    .splash-bar-wrap {
+      width: 150px;
+      height: 3px;
+      background: rgba(255, 255, 255, .18);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .splash-bar {
+      height: 100%;
+      background: rgba(255, 255, 255, .75);
+      border-radius: 3px;
+      animation: barAnim 1.7s ease-in-out infinite;
+    }
+
+    @keyframes barAnim {
+      0% {
+        width: 0%;
+        margin-left: 0%;
+      }
+
+      50% {
+        width: 55%;
+        margin-left: 22%;
+      }
+
+      100% {
+        width: 0%;
+        margin-left: 100%;
+      }
+    }
+
+    /* ── Iframe principal ── */
+    #calc-iframe {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      border: none;
+      display: block;
+      background: transparent;
+    }
+
+    /* ── Banner Flotante de Instalación PWA ── */
+    #pwa-banner {
+      position: fixed;
+      bottom: 1.2rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(30, 27, 46, 0.94);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      color: #fff;
+      padding: .75rem 1.2rem .75rem 1rem;
+      border-radius: 50px;
+      font-size: .85rem;
+      font-weight: 500;
+      display: none;
+      align-items: center;
+      gap: .7rem;
+      z-index: 90;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, .35);
+      white-space: nowrap;
+      animation: bannerIn .4s cubic-bezier(.34, 1.36, .64, 1);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    @keyframes bannerIn {
+      from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(30px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+      }
+    }
+
+    #btn-install {
+      background: #6C63FF;
+      color: #fff;
+      border: none;
+      padding: .45rem 1.1rem;
+      border-radius: 50px;
       font-size: .82rem;
-      color: rgba(255,255,255,.7);
-      font-weight: 400;
-      position: relative;
-      z-index: 1;
-    }
-
-    .auth-body {
-      padding: 2rem 2rem 1.75rem;
-    }
-
-    /* Form panel switch animation */
-    .auth-panel {
-      transition: opacity .2s ease, transform .2s ease;
-    }
-    .auth-panel.entering {
-      animation: panelIn .28s cubic-bezier(.4,0,.2,1);
-    }
-    @keyframes panelIn {
-      from { opacity: 0; transform: translateX(16px); }
-      to   { opacity: 1; transform: translateX(0); }
-    }
-
-    .auth-title {
-      font-family: 'Outfit', sans-serif;
-      font-size: 1.35rem;
       font-weight: 700;
-      color: var(--text);
-      margin-bottom: .25rem;
-    }
-    .auth-desc {
-      font-size: .88rem;
-      color: var(--text-muted);
-      margin-bottom: 1.75rem;
-      line-height: 1.5;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(108, 99, 255, .4);
+      transition: transform .15s ease, background .15s ease;
     }
 
-    /* Form fields */
-    .form-group {
+    #btn-install:active {
+      transform: scale(0.95);
+    }
+
+    #btn-install:hover {
+      background: #574ebd;
+    }
+
+    #btn-dismiss {
+      background: none;
+      border: none;
+      color: rgba(255, 255, 255, .5);
+      cursor: pointer;
+      font-size: 1.1rem;
+      padding: 0 .2rem;
+    }
+
+    #btn-dismiss:hover {
+      color: #fff;
+    }
+
+    /* ── Modal de Guía de Instalación Android / iOS ── */
+    #install-modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 12, 28, 0.75);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      z-index: 200;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 1.2rem;
+      animation: fadeIn .25s ease;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+      }
+
+      to {
+        opacity: 1;
+      }
+    }
+
+    .install-card {
+      background: #fff;
+      color: #1E1B2E;
+      border-radius: 24px;
+      padding: 1.6rem 1.4rem;
+      max-width: 380px;
+      width: 100%;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, .3);
+      position: relative;
+      animation: popUp .3s cubic-bezier(.34, 1.36, .64, 1);
+      text-align: center;
+    }
+
+    @keyframes popUp {
+      from {
+        opacity: 0;
+        transform: scale(0.88) translateY(20px);
+      }
+
+      to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+      }
+    }
+
+    .modal-close-btn {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      background: #F4F3FF;
+      border: none;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      font-weight: bold;
+      color: #6C63FF;
+      cursor: pointer;
+    }
+
+    .install-icon-badge {
+      width: 64px;
+      height: 64px;
+      background: #6C63FF;
+      border-radius: 18px;
+      margin: 0 auto 1rem auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 1.8rem;
+      box-shadow: 0 8px 20px rgba(108, 99, 255, 0.35);
+    }
+
+    .install-card h3 {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #1E1B2E;
+      margin-bottom: .4rem;
+    }
+
+    .install-card p {
+      font-size: .85rem;
+      color: #6E6D7A;
+      margin-bottom: 1.2rem;
+      line-height: 1.4;
+    }
+
+    .steps-list {
+      text-align: left;
+      background: #F8F7FF;
+      border-radius: 16px;
+      padding: 1rem;
       display: flex;
       flex-direction: column;
-      gap: .4rem;
-      margin-bottom: 1rem;
+      gap: .8rem;
+      margin-bottom: 1.2rem;
+      border: 1px solid #EAE8FF;
     }
-    .form-group label {
-      font-size: .78rem;
-      font-weight: 700;
-      color: var(--text);
-      letter-spacing: .05em;
-      text-transform: uppercase;
-    }
-    .form-group input {
-      padding: .9rem 1.1rem;
-      border: 2px solid var(--border);
-      border-radius: var(--radius-sm);
-      font-family: 'DM Sans', sans-serif;
-      font-size: .95rem;
-      color: var(--text);
-      background: var(--cream);
-      outline: none;
-      transition: var(--transition);
-      width: 100%;
-    }
-    .form-group input:focus {
-      border-color: var(--violet);
-      background: var(--white);
-      box-shadow: 0 0 0 4px var(--violet-lt);
-    }
-    .form-group input::placeholder { color: #C5C2D8; }
 
-    /* Inline form error */
-    .form-error {
-      background: #FFF0F0;
-      border: 1.5px solid #FFBABA;
-      border-radius: var(--radius-sm);
-      color: #B91C1C;
-      font-size: .86rem;
-      font-weight: 500;
-      padding: .7rem 1rem;
-      margin-bottom: .9rem;
-      line-height: 1.45;
+    .step-item {
       display: flex;
       align-items: flex-start;
-      gap: .5rem;
-    }
-    .form-error::before { content: '⚠'; flex-shrink: 0; }
-
-    .btn-primary {
-      width: 100%;
-      padding: 1rem;
-      background: linear-gradient(135deg, var(--violet) 0%, var(--violet-dk) 100%);
-      color: #fff;
-      border: none;
-      border-radius: var(--radius-sm);
-      font-family: 'Outfit', sans-serif;
-      font-size: 1rem;
-      font-weight: 700;
-      cursor: pointer;
-      transition: var(--transition);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: .5rem;
-      margin-top: .5rem;
-      position: relative;
-      letter-spacing: .01em;
-    }
-    .btn-primary:hover:not(:disabled) {
-      background: linear-gradient(135deg, var(--violet-dk) 0%, var(--violet-xdk) 100%);
-      transform: translateY(-2px);
-      box-shadow: 0 10px 28px rgba(108,99,255,.38);
-    }
-    .btn-primary:active:not(:disabled) { transform: translateY(0); box-shadow: none; }
-    .btn-primary:disabled { opacity: .6; cursor: not-allowed; }
-
-    .auth-toggle {
-      text-align: center;
-      margin-top: 1.4rem;
-      font-size: .88rem;
-      color: var(--text-muted);
-    }
-    .auth-toggle a {
-      color: var(--violet);
-      font-weight: 700;
-      cursor: pointer;
-      text-decoration: none;
-      border-bottom: 1.5px solid var(--violet-lt);
-      transition: var(--transition);
-    }
-    .auth-toggle a:hover { border-color: var(--violet); }
-
-    /* ═══════════════════════════════════════════════════════
-       ── APP SCREEN ──────────────────────────────────────
-    ═══════════════════════════════════════════════════════ */
-    #screen-app {
-      min-height: 100dvh;
-      display: grid;
-      grid-template-rows: auto 1fr;
-      grid-template-columns: 1fr 340px;
-      grid-template-areas:
-        "header header"
-        "calc   history";
-    }
-    @media (max-width: 900px) {
-      #screen-app {
-        grid-template-columns: 1fr;
-        grid-template-areas:
-          "header"
-          "calc";
-      }
-      #panel-history { display: none; }
-    }
-
-    /* ── App Header ── */
-    #app-header {
-      grid-area: header;
-      background: rgba(255,255,255,.85);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      border-bottom: 1px solid var(--border);
-      padding: .9rem 1.75rem;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      position: sticky;
-      top: 0;
-      z-index: 100;
-    }
-    .app-logo {
-      font-family: 'Outfit', sans-serif;
-      font-size: 1.25rem;
-      font-weight: 900;
-      color: var(--violet);
-      letter-spacing: -.04em;
-      display: flex;
-      align-items: center;
-      gap: .3rem;
-    }
-    .app-logo-dot {
-      width: 7px; height: 7px;
-      background: var(--coral);
-      border-radius: 50%;
-      display: inline-block;
-    }
-    .header-right {
-      display: flex;
-      align-items: center;
-      gap: .75rem;
-    }
-    .user-avatar {
-      width: 36px; height: 36px;
-      background: linear-gradient(135deg, var(--violet), var(--violet-dk));
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-family: 'Outfit', sans-serif;
-      font-weight: 800;
-      font-size: .9rem;
-      color: #fff;
-      box-shadow: 0 2px 8px rgba(108,99,255,.3);
-      flex-shrink: 0;
-    }
-    .user-name {
-      font-weight: 600;
-      font-size: .88rem;
-      color: var(--text);
-      max-width: 120px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-    @media (max-width: 500px) { .user-name { display: none; } }
-
-    .btn-icon {
-      padding: .45rem .9rem;
-      background: var(--cream);
-      border: 1.5px solid var(--border);
-      border-radius: 50px;
-      font-family: 'DM Sans', sans-serif;
-      font-size: .82rem;
-      font-weight: 600;
-      color: var(--text-muted);
-      cursor: pointer;
-      transition: var(--transition);
-      display: flex;
-      align-items: center;
-      gap: .35rem;
-    }
-    .btn-icon:hover { border-color: var(--coral); color: var(--coral); background: var(--coral-lt); }
-
-    .btn-history-toggle {
-      padding: .45rem .9rem;
-      background: var(--violet-lt);
-      border: none;
-      border-radius: 50px;
-      font-family: 'DM Sans', sans-serif;
-      font-size: .82rem;
-      font-weight: 600;
-      color: var(--violet);
-      cursor: pointer;
-      transition: var(--transition);
-      display: none;
-      align-items: center;
-      gap: .35rem;
-    }
-    @media (max-width: 900px) { .btn-history-toggle { display: flex; } }
-    .btn-history-toggle:hover { background: var(--lavender); }
-
-    /* ── Calculator Panel ── */
-    #panel-calc {
-      grid-area: calc;
-      padding: 2rem 1.5rem;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: flex-start;
-      gap: 1.5rem;
-      overflow-y: auto;
-    }
-
-    .calc-card {
-      width: 100%;
-      max-width: 420px;
-      background: var(--white);
-      border-radius: var(--radius-lg);
-      box-shadow: var(--shadow-lg);
-      overflow: hidden;
-      animation: calcCardIn .5s cubic-bezier(.34,1.36,.64,1) .1s both;
-    }
-    @keyframes calcCardIn {
-      from { opacity: 0; transform: translateY(20px) scale(.97); }
-      to   { opacity: 1; transform: translateY(0) scale(1); }
-    }
-
-    /* Display */
-    .calc-display {
-      background: linear-gradient(160deg, #1E1B2E 0%, #2D2847 100%);
-      padding: 1.5rem 1.75rem 1.35rem;
-      min-height: 140px;
-      display: flex;
-      flex-direction: column;
-      justify-content: flex-end;
-      position: relative;
-      overflow: hidden;
-    }
-    .calc-display::before {
-      content: '';
-      position: absolute;
-      width: 200px; height: 200px;
-      background: rgba(108,99,255,.12);
-      border-radius: 50%;
-      top: -80px; right: -60px;
-    }
-    .calc-display::after {
-      content: '';
-      position: absolute;
-      width: 80px; height: 80px;
-      background: rgba(201,192,255,.08);
-      border-radius: 50%;
-      bottom: -20px; left: 20px;
-    }
-    .calc-expression {
-      font-family: 'DM Sans', sans-serif;
-      font-size: .88rem;
-      color: rgba(255,255,255,.42);
-      min-height: 1.2em;
-      word-break: break-all;
-      text-align: right;
-      position: relative;
-      z-index: 1;
-      transition: var(--transition);
-    }
-    .calc-result {
-      font-family: 'Outfit', sans-serif;
-      font-size: 2.9rem;
-      font-weight: 800;
-      color: #fff;
-      text-align: right;
-      line-height: 1.1;
-      word-break: break-all;
-      transition: color .2s ease, transform .15s ease;
-      position: relative;
-      z-index: 1;
-      letter-spacing: -.02em;
-    }
-    .calc-result.flash {
-      color: var(--mint);
-      transform: scale(1.04);
-    }
-
-    /* Keypad */
-    .calc-keypad {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 1px;
-      background: var(--border);
-    }
-    .key {
-      background: var(--white);
-      border: none;
-      padding: 0;
-      height: 70px;
-      font-family: 'Outfit', sans-serif;
-      font-size: 1.1rem;
-      font-weight: 500;
-      color: var(--text);
-      cursor: pointer;
-      transition: background .1s ease, transform .1s ease, color .1s ease;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      user-select: none;
-      -webkit-user-select: none;
-      position: relative;
-    }
-    .key:hover  { background: var(--cream); }
-    .key:active { background: var(--border); transform: scale(.93); }
-
-    .key-op    { color: var(--violet); font-weight: 700; font-size: 1.25rem; }
-    .key-fn    {
-      color: var(--text-muted);
-      font-size: .9rem;
-      font-weight: 600;
-      background: #F6F5FF;
-    }
-    .key-fn:hover { background: var(--violet-lt); color: var(--violet); }
-    .key-clear {
-      color: var(--coral);
-      font-weight: 800;
-      background: #FFF5F5;
-      font-size: 1.15rem;
-    }
-    .key-clear:hover { background: var(--coral-lt); }
-    .key-eq {
-      background: linear-gradient(135deg, var(--violet), var(--violet-dk));
-      color: #fff;
-      font-size: 1.6rem;
-      font-weight: 800;
-      transition: filter .15s ease, transform .1s ease;
-    }
-    .key-eq:hover  { filter: brightness(1.1); }
-    .key-eq:active { transform: scale(.94); filter: brightness(.95); }
-
-    /* Save button area */
-    .calc-actions {
-      padding: 1.1rem 1.5rem;
-      display: flex;
-      gap: .75rem;
-      border-top: 1px solid var(--border);
-      background: #FAFAFF;
-    }
-    .btn-save {
-      flex: 1;
-      padding: .85rem;
-      background: linear-gradient(135deg, var(--mint), var(--mint-dk));
-      color: var(--text);
-      border: none;
-      border-radius: var(--radius-sm);
-      font-family: 'Outfit', sans-serif;
-      font-size: .95rem;
-      font-weight: 700;
-      cursor: pointer;
-      transition: var(--transition);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: .5rem;
-      letter-spacing: .01em;
-    }
-    .btn-save:hover:not(:disabled) {
-      filter: brightness(1.06);
-      transform: translateY(-2px);
-      box-shadow: 0 8px 20px rgba(82,201,155,.3);
-    }
-    .btn-save:active:not(:disabled) { transform: translateY(0); }
-    .btn-save:disabled { opacity: .45; cursor: not-allowed; filter: grayscale(.4); }
-
-    /* ── History Panel ── */
-    #panel-history {
-      grid-area: history;
-      background: var(--white);
-      border-left: 1px solid var(--border);
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-    }
-    .history-header {
-      padding: 1.25rem 1.5rem 1rem;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-    .history-title {
-      font-family: 'Outfit', sans-serif;
-      font-size: .95rem;
-      font-weight: 800;
-      color: var(--text);
-      letter-spacing: -.01em;
-    }
-    .history-count {
-      background: var(--violet-lt);
-      color: var(--violet);
-      font-family: 'Outfit', sans-serif;
-      font-size: .78rem;
-      font-weight: 800;
-      padding: .2rem .65rem;
-      border-radius: 50px;
-      min-width: 28px;
-      text-align: center;
-    }
-    .history-list {
-      flex: 1;
-      overflow-y: auto;
-      padding: .6rem;
-    }
-    .history-list::-webkit-scrollbar { width: 3px; }
-    .history-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-    .history-list::-webkit-scrollbar-thumb:hover { background: var(--lavender); }
-
-    /* History empty state */
-    .history-empty {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 2.5rem 1.5rem;
-      gap: 1rem;
-      text-align: center;
-    }
-    .history-empty-illo { width: 120px; height: 120px; }
-    .history-empty-title {
-      font-family: 'Outfit', sans-serif;
-      font-weight: 700;
-      font-size: 1rem;
-      color: var(--text);
-    }
-    .history-empty-desc {
-      font-size: .84rem;
-      color: var(--text-muted);
-      line-height: 1.5;
-    }
-
-    /* History loading */
-    .history-loading {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 3rem 1rem;
-      gap: 1rem;
-      color: var(--text-muted);
+      gap: .7rem;
       font-size: .85rem;
+      color: #2D2B3D;
+      line-height: 1.35;
     }
 
-    /* History items */
-    .history-item {
-      padding: .85rem 1rem;
-      border-radius: var(--radius-sm);
-      cursor: pointer;
-      transition: var(--transition);
-      margin-bottom: .35rem;
-      border: 1.5px solid transparent;
-      position: relative;
-      overflow: hidden;
-    }
-    .history-item::before {
-      content: '';
-      position: absolute;
-      left: 0; top: 0; bottom: 0;
-      width: 3px;
-      background: var(--violet);
-      opacity: 0;
-      transition: opacity .15s ease;
-      border-radius: 0 2px 2px 0;
-    }
-    .history-item:hover { background: var(--violet-lt); border-color: var(--lavender); }
-    .history-item:hover::before { opacity: 1; }
-    .history-item.animate-in {
-      animation: histItemIn .3s ease both;
-    }
-    @keyframes histItemIn {
-      from { opacity: 0; transform: translateX(12px); }
-      to   { opacity: 1; transform: translateX(0); }
-    }
-
-    .history-item-top {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: .5rem;
-    }
-    .history-expr {
-      font-size: .84rem;
-      color: var(--text-muted);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      flex: 1;
-    }
-    .history-del-btn {
-      opacity: 0;
-      width: 22px; height: 22px;
-      border: none;
-      background: none;
-      cursor: pointer;
-      color: var(--coral);
+    .step-num {
+      background: #6C63FF;
+      color: #fff;
+      font-weight: 800;
+      font-size: .75rem;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      border-radius: 6px;
-      transition: opacity .15s ease, background .15s ease;
       flex-shrink: 0;
-      font-size: .9rem;
-    }
-    .history-item:hover .history-del-btn { opacity: 1; }
-    .history-del-btn:hover { background: var(--coral-lt); }
-
-    .history-res {
-      font-family: 'Outfit', sans-serif;
-      font-size: 1.1rem;
-      font-weight: 800;
-      color: var(--text);
-      margin-top: .15rem;
-      letter-spacing: -.01em;
-    }
-    .history-date {
-      font-size: .72rem;
-      color: #BDB8D8;
-      margin-top: .2rem;
+      margin-top: 1px;
     }
 
-    /* ── Mobile History Drawer ── */
-    #history-drawer {
-      display: none;
-      position: fixed;
-      inset: 0;
-      z-index: 500;
+    .btn-understand {
+      width: 100%;
+      background: #6C63FF;
+      color: #fff;
+      border: none;
+      padding: .85rem;
+      border-radius: 14px;
+      font-size: .95rem;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(108, 99, 255, .3);
     }
-    #history-drawer.open { display: block; }
-    .drawer-overlay {
-      position: absolute;
-      inset: 0;
-      background: rgba(30,27,46,.5);
-      backdrop-filter: blur(6px);
-      -webkit-backdrop-filter: blur(6px);
-    }
-    .drawer-panel {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background: var(--white);
-      border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-      max-height: 78dvh;
-      display: flex;
-      flex-direction: column;
-      animation: drawerUp .32s cubic-bezier(.34,1.26,.64,1);
-    }
-    @keyframes drawerUp {
-      from { transform: translateY(100%); }
-      to   { transform: translateY(0); }
-    }
-    .drawer-handle {
-      width: 36px; height: 4px;
-      background: var(--border);
-      border-radius: 4px;
-      margin: .85rem auto .5rem;
-      flex-shrink: 0;
-    }
-
-    /* ═══════════════════════════════════════════════════════
-       PAGE TRANSITIONS
-    ═══════════════════════════════════════════════════════ */
-    .screen { display: none; }
-    .screen.active { display: block; }
-    #screen-auth.active  { display: flex; }
-    #screen-app.active   { display: grid; }
   </style>
 </head>
+
 <body>
 
-  <!-- Toast container -->
-  <div id="toast-container" role="status" aria-live="polite"></div>
-
-  <!-- ══════════════════════════════════════════════════════
-       SCREEN: LOADING (Corporate Memphis)
-  ══════════════════════════════════════════════════════ -->
-  <div id="screen-loading" role="status" aria-label="Cargando aplicación">
-
-    <!-- Corporate Memphis Illustration -->
-    <div class="loading-illo" aria-hidden="true">
-      <svg viewBox="0 0 280 240" xmlns="http://www.w3.org/2000/svg">
-
-        <!-- Background blob -->
-        <ellipse cx="140" cy="130" rx="110" ry="95" fill="#EAE8FF" opacity=".6"/>
-
-        <!-- Decorative floating shapes -->
-        <!-- Peach rounded rect (top-left) -->
-        <g class="illo-float-b">
-          <rect x="12" y="20" width="44" height="44" rx="12" fill="#FFD3B6"/>
-          <rect x="22" y="30" width="24" height="5" rx="2.5" fill="#FF9A5C" opacity=".7"/>
-          <rect x="22" y="40" width="16" height="5" rx="2.5" fill="#FF9A5C" opacity=".5"/>
+  <!-- Splash de carga -->
+  <div id="splash">
+    <div class="splash-illo" aria-hidden="true">
+      <svg viewBox="0 0 90 90" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="45" cy="45" r="40" fill="rgba(255,255,255,.1)" />
+        <g class="f1">
+          <circle cx="18" cy="18" r="10" fill="#FFD3B6" opacity=".8" />
         </g>
-
-        <!-- Sky circle (top-right) -->
-        <g class="illo-float-a">
-          <circle cx="248" cy="35" r="26" fill="#7DD3FC"/>
-          <circle cx="241" cy="28" r="4" fill="#1E1B2E"/>
-          <circle cx="255" cy="28" r="4" fill="#1E1B2E"/>
-          <path d="M239 40 Q248 47 257 40" stroke="#1E1B2E" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+        <g class="f2">
+          <rect x="60" y="12" width="16" height="16" rx="4" fill="#A8E6CF" opacity=".8" />
         </g>
-
-        <!-- Mint triangle (bottom-left) -->
-        <g class="illo-float-c">
-          <polygon points="30,210 60,165 90,210" fill="#A8E6CF"/>
-          <circle cx="60" cy="185" r="7" fill="white" opacity=".6"/>
+        <g class="f3">
+          <polygon points="72,65 80,78 64,78" fill="#FFE566" opacity=".7" />
         </g>
-
-        <!-- Yellow star (bottom-right) -->
-        <g class="illo-float-b" style="transform-origin: 245px 195px">
-          <polygon points="245,175 249,189 263,189 252,197 256,211 245,203 234,211 238,197 227,189 241,189"
-                   fill="#FFE566"/>
-        </g>
-
-        <!-- Coral small circle accent -->
-        <g class="illo-float-a">
-          <circle cx="35" cy="110" r="12" fill="#FF6B6B"/>
-        </g>
-
-        <!-- Lavender ring -->
-        <g class="illo-float-c">
-          <circle cx="255" cy="145" r="18" fill="none" stroke="#C9C0FF" stroke-width="5"/>
-        </g>
-
-        <!-- ── Main character: Calculator person ── -->
-        <!-- Body -->
-        <rect x="95" y="95" width="90" height="100" rx="20" fill="#6C63FF" class="illo-pulse"/>
-
-        <!-- Screen on body -->
-        <rect x="108" y="110" width="64" height="38" rx="8" fill="white" opacity=".92"/>
-        <!-- Screen text lines -->
-        <rect x="116" y="118" width="40" height="5" rx="2.5" fill="#C9C0FF"/>
-        <rect x="116" y="127" width="28" height="8" rx="3" fill="#6C63FF"/>
-        <text x="116" y="135" font-family="monospace" font-size="8" fill="#6C63FF" font-weight="bold">42</text>
-
-        <!-- Keypad dots on body -->
-        <circle cx="115" cy="162" r="4" fill="white" opacity=".55"/>
-        <circle cx="130" cy="162" r="4" fill="white" opacity=".55"/>
-        <circle cx="145" cy="162" r="4" fill="white" opacity=".55"/>
-        <circle cx="160" cy="162" r="4" fill="#FFD3B6" opacity=".8"/>
-        <circle cx="115" cy="177" r="4" fill="white" opacity=".55"/>
-        <circle cx="130" cy="177" r="4" fill="white" opacity=".55"/>
-        <circle cx="145" cy="177" r="4" fill="white" opacity=".55"/>
-        <circle cx="160" cy="177" r="4" fill="white" opacity=".55"/>
-
-        <!-- Head -->
-        <circle cx="140" cy="82" r="28" fill="#FFD3B6"/>
-
-        <!-- Eyes -->
-        <circle cx="131" cy="78" r="4.5" fill="#1E1B2E"/>
-        <circle cx="149" cy="78" r="4.5" fill="#1E1B2E"/>
-        <!-- Eye shine -->
-        <circle cx="133" cy="76" r="1.5" fill="white"/>
-        <circle cx="151" cy="76" r="1.5" fill="white"/>
-
-        <!-- Smile -->
-        <path d="M131 88 Q140 96 149 88" stroke="#1E1B2E" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-
-        <!-- Blush cheeks -->
-        <ellipse cx="122" cy="86" rx="7" ry="4" fill="#FF6B6B" opacity=".25"/>
-        <ellipse cx="158" cy="86" rx="7" ry="4" fill="#FF6B6B" opacity=".25"/>
-
-        <!-- Hair / top head decoration -->
-        <ellipse cx="140" cy="56" rx="22" ry="8" fill="#4B44CC"/>
-        <circle cx="125" cy="57" r="5" fill="#4B44CC"/>
-        <circle cx="155" cy="57" r="5" fill="#4B44CC"/>
-
-        <!-- Arms -->
-        <!-- Left arm (holding paper) -->
-        <rect x="68" y="108" width="30" height="14" rx="7" fill="#6C63FF"/>
-        <rect x="52" y="100" width="20" height="28" rx="6" fill="#FFD3B6"/>
-        <!-- Paper in left hand -->
-        <rect x="32" y="88" width="24" height="30" rx="4" fill="white" stroke="#EBEBF0" stroke-width="1.5"/>
-        <rect x="36" y="94" width="16" height="2.5" rx="1.25" fill="#C9C0FF"/>
-        <rect x="36" y="100" width="12" height="2.5" rx="1.25" fill="#C9C0FF"/>
-        <rect x="36" y="106" width="14" height="2.5" rx="1.25" fill="#A8E6CF"/>
-
-        <!-- Right arm (waving/thumbs up) -->
-        <rect x="182" y="108" width="30" height="14" rx="7" fill="#6C63FF"/>
-        <rect x="208" y="98" width="20" height="28" rx="6" fill="#FFD3B6"/>
-        <!-- Thumb up shape -->
-        <rect x="214" y="86" width="10" height="16" rx="5" fill="#FFD3B6"/>
-
-        <!-- Legs -->
-        <rect x="112" y="188" width="22" height="32" rx="10" fill="#4B44CC"/>
-        <rect x="146" y="188" width="22" height="32" rx="10" fill="#4B44CC"/>
-        <!-- Shoes -->
-        <rect x="108" y="213" width="28" height="14" rx="7" fill="#1E1B2E"/>
-        <rect x="142" y="213" width="28" height="14" rx="7" fill="#1E1B2E"/>
+        <rect x="28" y="25" width="34" height="42" rx="7" fill="white" opacity=".95" />
+        <rect x="33" y="31" width="24" height="12" rx="4" fill="#EAE8FF" />
+        <text x="45" y="41" text-anchor="middle" font-size="8" font-weight="700" fill="#6C63FF"
+          font-family="monospace">42</text>
+        <circle cx="36" cy="52" r="3.5" fill="#FFD3B6" />
+        <circle cx="45" cy="52" r="3.5" fill="#A8E6CF" />
+        <circle cx="54" cy="52" r="3.5" fill="#C9C0FF" />
+        <circle cx="36" cy="61" r="3.5" fill="#C9C0FF" />
+        <circle cx="45" cy="61" r="3.5" fill="#C9C0FF" />
+        <circle cx="54" cy="61" r="3.5" fill="#6C63FF" />
       </svg>
     </div>
-
-    <!-- Brand -->
-    <div>
-      <div class="loading-brand">
-        ✦ Calcula<span class="loading-brand-dot"></span>
-      </div>
-      <p class="loading-tagline">Tus cálculos, siempre en la nube</p>
-    </div>
-
-    <!-- Progress bar -->
-    <div class="loading-bar-wrap" role="progressbar" aria-label="Cargando">
-      <div class="loading-bar"></div>
-    </div>
-
-  </div><!-- /screen-loading -->
-
-
-  <!-- ══════════════════════════════════════════════════════
-       MEMPHIS BACKGROUND (visible en auth)
-  ══════════════════════════════════════════════════════ -->
-  <div class="memphis-bg" aria-hidden="true" id="memphis-bg">
-    <svg width="130" height="130" style="top:8%;left:3%;opacity:.07">
-      <circle cx="65" cy="65" r="58" fill="none" stroke="#6C63FF" stroke-width="9"/>
-      <circle cx="65" cy="65" r="38" fill="#A8E6CF" opacity=".8"/>
-    </svg>
-    <svg width="90" height="90" style="bottom:12%;right:6%;opacity:.08">
-      <rect width="90" height="90" rx="18" fill="#FFD3B6"/>
-    </svg>
-    <svg width="70" height="70" style="top:55%;left:1%;opacity:.07">
-      <polygon points="35,0 70,60 0,60" fill="#FF6B6B"/>
-    </svg>
-    <svg width="110" height="110" style="top:3%;right:12%;opacity:.06">
-      <rect x="12" y="12" width="86" height="86" rx="10" fill="none" stroke="#C9C0FF" stroke-width="7" transform="rotate(18,55,55)"/>
-    </svg>
-    <svg width="50" height="50" style="bottom:30%;left:8%;opacity:.09">
-      <circle cx="25" cy="25" r="25" fill="#FFE566"/>
-    </svg>
-    <svg width="60" height="60" style="top:30%;right:3%;opacity:.07">
-      <polygon points="30,5 35,20 50,20 38,29 42,44 30,35 18,44 22,29 10,20 25,20"
-               fill="#7DD3FC"/>
-    </svg>
-  </div>
-
-
-  <!-- ══════════════════════════════════════════════════════
-       SCREEN: AUTH
-  ══════════════════════════════════════════════════════ -->
-  <div id="screen-auth" class="screen">
-    <div class="auth-wrapper">
-
-      <!-- Header band -->
-      <div class="auth-header-band">
-        <div class="auth-logo">✦ Calcula<span class="auth-logo-dot"></span></div>
-        <p class="auth-header-sub">Calculadora inteligente en la nube</p>
-      </div>
-
-      <div class="auth-body">
-
-        <!-- LOGIN FORM -->
-        <div id="form-login" class="auth-panel">
-          <h1 class="auth-title">Bienvenido de vuelta</h1>
-          <p class="auth-desc">Ingresá tu email y contraseña para acceder a tus cálculos.</p>
-
-          <div id="login-error" class="form-error hidden" role="alert"></div>
-
-          <form id="login-form" novalidate>
-            <div class="form-group">
-              <label for="login-email">Email</label>
-              <input type="email" id="login-email" placeholder="tu@email.com"
-                     autocomplete="email" required autofocus>
-            </div>
-            <div class="form-group">
-              <label for="login-password">Contraseña</label>
-              <input type="password" id="login-password" placeholder="••••••••"
-                     autocomplete="current-password" required>
-            </div>
-            <button type="submit" class="btn-primary" id="btn-login">
-              <span class="btn-label">Ingresar</span>
-            </button>
-          </form>
-
-          <p class="auth-toggle">
-            ¿No tenés cuenta?
-            <a id="switch-to-register" role="button" tabindex="0">Crear cuenta gratis</a>
-          </p>
-        </div>
-
-        <!-- REGISTER FORM -->
-        <div id="form-register" class="auth-panel hidden">
-          <h1 class="auth-title">Crear cuenta</h1>
-          <p class="auth-desc">Registrate para guardar y revisar todos tus cálculos.</p>
-
-          <div id="register-error" class="form-error hidden" role="alert"></div>
-
-          <form id="register-form" novalidate>
-            <div class="form-group">
-              <label for="reg-nombre">Nombre</label>
-              <input type="text" id="reg-nombre" placeholder="Tu nombre"
-                     autocomplete="name" required>
-            </div>
-            <div class="form-group">
-              <label for="reg-email">Email</label>
-              <input type="email" id="reg-email" placeholder="tu@email.com"
-                     autocomplete="email" required>
-            </div>
-            <div class="form-group">
-              <label for="reg-password">Contraseña</label>
-              <input type="password" id="reg-password" placeholder="Mínimo 6 caracteres"
-                     autocomplete="new-password" required minlength="6">
-            </div>
-            <button type="submit" class="btn-primary" id="btn-register">
-              <span class="btn-label">Crear cuenta</span>
-            </button>
-          </form>
-
-          <p class="auth-toggle">
-            ¿Ya tenés cuenta?
-            <a id="switch-to-login" role="button" tabindex="0">Iniciar sesión</a>
-          </p>
-        </div>
-
-      </div><!-- /auth-body -->
-    </div><!-- /auth-wrapper -->
-  </div><!-- /screen-auth -->
-
-
-  <!-- ══════════════════════════════════════════════════════
-       SCREEN: APP (Calculator + History)
-  ══════════════════════════════════════════════════════ -->
-  <div id="screen-app" class="screen">
-
-    <!-- Header -->
-    <header id="app-header">
-      <div class="app-logo">✦ Calcula<span class="app-logo-dot"></span></div>
-      <div class="header-right">
-        <button class="btn-history-toggle" id="btn-toggle-history" aria-label="Ver historial">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-               stroke-width="2.5" stroke-linecap="round"><polyline points="12 8 12 12 14 14"/>
-            <circle cx="12" cy="12" r="10"/></svg>
-          Historial
-        </button>
-        <div class="user-avatar" id="user-avatar">?</div>
-        <span class="user-name" id="user-name-display">Usuario</span>
-        <button class="btn-icon" id="btn-logout">Salir</button>
-      </div>
-    </header>
-
-    <!-- Calculator Panel -->
-    <main id="panel-calc">
-      <div class="calc-card">
-
-        <!-- Display -->
-        <div class="calc-display" aria-live="polite">
-          <div class="calc-expression" id="calc-expression" aria-label="Expresión"></div>
-          <div class="calc-result" id="calc-result" aria-label="Resultado">0</div>
-        </div>
-
-        <!-- Keypad -->
-        <div class="calc-keypad" role="group" aria-label="Teclado de calculadora">
-          <!-- Row 1: Scientific functions -->
-          <button class="key key-fn" data-action="fn"    data-fn="sin"  aria-label="seno">sin</button>
-          <button class="key key-fn" data-action="fn"    data-fn="cos"  aria-label="coseno">cos</button>
-          <button class="key key-fn" data-action="fn"    data-fn="sqrt" aria-label="raíz cuadrada">√</button>
-          <button class="key key-clear" data-action="clear"              aria-label="borrar todo">C</button>
-          <!-- Row 2 -->
-          <button class="key key-fn" data-action="fn"    data-fn="tan"  aria-label="tangente">tan</button>
-          <button class="key key-fn" data-action="fn"    data-fn="log"  aria-label="logaritmo base 10">log</button>
-          <button class="key key-fn" data-action="fn"    data-fn="ln"   aria-label="logaritmo natural">ln</button>
-          <button class="key key-op" data-action="input" data-val="("   aria-label="paréntesis apertura">(</button>
-          <!-- Row 3 -->
-          <button class="key key-fn" data-action="pi"                   aria-label="pi">π</button>
-          <button class="key key-fn" data-action="fn"    data-fn="pow"  aria-label="elevar al cuadrado">x²</button>
-          <button class="key key-op" data-action="input" data-val="%"   aria-label="módulo">%</button>
-          <button class="key key-op" data-action="input" data-val=")"   aria-label="paréntesis cierre">)</button>
-          <!-- Row 4 -->
-          <button class="key"        data-action="input" data-val="7">7</button>
-          <button class="key"        data-action="input" data-val="8">8</button>
-          <button class="key"        data-action="input" data-val="9">9</button>
-          <button class="key key-op" data-action="input" data-val="÷"   aria-label="dividir">÷</button>
-          <!-- Row 5 -->
-          <button class="key"        data-action="input" data-val="4">4</button>
-          <button class="key"        data-action="input" data-val="5">5</button>
-          <button class="key"        data-action="input" data-val="6">6</button>
-          <button class="key key-op" data-action="input" data-val="×"   aria-label="multiplicar">×</button>
-          <!-- Row 6 -->
-          <button class="key"        data-action="input" data-val="1">1</button>
-          <button class="key"        data-action="input" data-val="2">2</button>
-          <button class="key"        data-action="input" data-val="3">3</button>
-          <button class="key key-op" data-action="input" data-val="−"   aria-label="restar">−</button>
-          <!-- Row 7 -->
-          <button class="key"        data-action="input" data-val="0">0</button>
-          <button class="key"        data-action="input" data-val=".">.</button>
-          <button class="key key-fn" data-action="backspace"            aria-label="borrar último">⌫</button>
-          <button class="key key-op" data-action="input" data-val="+"   aria-label="sumar">+</button>
-          <!-- Row 8: Equals full width -->
-          <button class="key key-eq" data-action="equals" style="grid-column:span 4"
-                  aria-label="calcular">=</button>
-        </div>
-
-        <!-- Actions -->
-        <div class="calc-actions">
-          <button class="btn-save" id="btn-save-calc" disabled aria-label="Guardar cálculo actual">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                 stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/>
-              <polyline points="17 21 17 13 7 13 7 21"/>
-              <polyline points="7 3 7 8 15 8"/>
-            </svg>
-            Guardar cálculo
-          </button>
-        </div>
-
-      </div><!-- /calc-card -->
-    </main>
-
-    <!-- History Panel (desktop) -->
-    <aside id="panel-history">
-      <div class="history-header">
-        <span class="history-title">Historial</span>
-        <span class="history-count" id="history-count">0</span>
-      </div>
-      <div class="history-list" id="history-list">
-        <div class="history-loading">
-          <div class="spinner"></div>
-          <span>Cargando historial…</span>
-        </div>
-      </div>
-    </aside>
-
-  </div><!-- /screen-app -->
-
-
-  <!-- Mobile History Drawer -->
-  <div id="history-drawer" role="dialog" aria-modal="true" aria-label="Historial de cálculos">
-    <div class="drawer-overlay" id="drawer-overlay"></div>
-    <div class="drawer-panel">
-      <div class="drawer-handle" aria-hidden="true"></div>
-      <div class="history-header">
-        <span class="history-title">Historial</span>
-        <span class="history-count" id="drawer-history-count">0</span>
-      </div>
-      <div class="history-list" id="drawer-history-list"
-           style="flex:1;overflow-y:auto;padding:.6rem"></div>
+    <div class="splash-logo">✦ Calcula<span class="splash-dot"></span></div>
+    <p class="splash-tagline">Tus cálculos, siempre en la nube</p>
+    <div class="splash-bar-wrap">
+      <div class="splash-bar"></div>
     </div>
   </div>
 
+  <!-- Iframe principal -->
+  <iframe id="calc-iframe" style="display:none" allowfullscreen allow="storage-access; clipboard-read; clipboard-write"
+    referrerpolicy="no-referrer-when-downgrade" loading="eager" title="Calcula — Calculadora en la Nube">
+  </iframe>
 
-  <!-- ══════════════════════════════════════════════════════
-       JAVASCRIPT
-  ══════════════════════════════════════════════════════ -->
+  <!-- Banner PWA install -->
+  <div id="pwa-banner">
+    <span>📲</span>
+    <span>Instalá Calcula PWA</span>
+    <button id="btn-install">Instalar</button>
+    <button id="btn-dismiss" aria-label="Cerrar">✕</button>
+  </div>
+
+  <!-- Modal Guía de Instalación Android / iOS -->
+  <div id="install-modal-overlay">
+    <div class="install-card">
+      <button class="modal-close-btn" id="modal-close">✕</button>
+      <div class="install-icon-badge">📱</div>
+      <h3>Instalar en tu Celular</h3>
+      <p>Instalá Calcula como app nativa para acceder directo desde tu pantalla de inicio.</p>
+
+      <div class="steps-list" id="modal-steps">
+        <!-- Pasos inyectados dinámicamente según SO -->
+      </div>
+
+      <button class="btn-understand" id="btn-modal-ok">Entendido</button>
+    </div>
+  </div>
+
   <script>
-  (() => {
-    'use strict';
+    // ── URL de la Web App de GAS ──────────────────────────────────
+    var GAS_URL = 'https://script.google.com/macros/s/AKfycbyGJOavoR9H-0yVmOsDkSw9jzWur9-8hEp3DXe-SlJ8U8Q_mEjeXe9gOKAGvGAJB_py/exec';
 
-    // ─── PWA Manifest (blob URL workaround para GAS iframe) ───────
-    (function injectManifest() {
+    var isEmbedded = (window.self !== window.top);
+    var splash = document.getElementById('splash');
+
+    function hideSplash() {
+      splash.classList.add('fade-out');
+      setTimeout(function () { splash.style.display = 'none'; }, 480);
+    }
+
+    if (isEmbedded) {
+      // ── MODO IFRAME (Google Sites) ───────────────────────────────
+      setTimeout(function () {
+        window.location.replace(GAS_URL + '?embedded=true');
+      }, 800);
+
+    } else {
+      // ── MODO STANDALONE / WRAPPER PWA ─────────────────────────────
+      var iframe = document.getElementById('calc-iframe');
+      iframe.style.display = 'block';
+      iframe.src = GAS_URL + '?embedded=true';
+
+      iframe.addEventListener('load', hideSplash);
+      setTimeout(function () {
+        if (!splash.classList.contains('fade-out')) hideSplash();
+      }, 9000);
+
+      // ── Generador dinámico de íconos PNG en Canvas para Chrome Android ──
+      function generatePngIcon(size) {
+        try {
+          var canvas = document.createElement('canvas');
+          canvas.width = size; canvas.height = size;
+          var ctx = canvas.getContext('2d');
+          var r = size * 0.22;
+
+          ctx.fillStyle = '#6C63FF';
+          ctx.beginPath();
+          if (ctx.roundRect) ctx.roundRect(0, 0, size, size, r);
+          else ctx.rect(0, 0, size, size);
+          ctx.fill();
+
+          ctx.fillStyle = 'rgba(255,255,255,0.92)';
+          var pad = size * 0.24;
+          var w = size - pad * 2;
+          var h = size * 0.21;
+          ctx.beginPath();
+          if (ctx.roundRect) ctx.roundRect(pad, pad * 0.85, w, h, size * 0.04);
+          else ctx.rect(pad, pad * 0.85, w, h);
+          ctx.fill();
+
+          ctx.fillStyle = '#6C63FF';
+          ctx.font = 'bold ' + Math.round(size * 0.12) + 'px monospace';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('42', size / 2, pad * 0.85 + h / 2);
+
+          ctx.fillStyle = '#FFD3B6';
+          ctx.beginPath(); ctx.arc(size * 0.37, size * 0.62, size * 0.05, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = 'rgba(255,255,255,0.8)';
+          ctx.beginPath(); ctx.arc(size * 0.50, size * 0.62, size * 0.05, 0, Math.PI * 2); ctx.fill();
+          ctx.beginPath(); ctx.arc(size * 0.63, size * 0.62, size * 0.05, 0, Math.PI * 2); ctx.fill();
+
+          return canvas.toDataURL('image/png');
+        } catch (e) {
+          return null;
+        }
+      }
+
+      // ── Inyección de Manifiesto Blob PWA con íconos PNG reales ────
       try {
-        var manifest = {
-          name: 'Calcula — Calculadora en la Nube',
+        var png192 = generatePngIcon(192);
+        var png512 = generatePngIcon(512);
+
+        var manifestObj = {
+          name: 'Calcula · Calculadora en la Nube',
           short_name: 'Calcula',
-          description: 'Calculadora científica con historial en la nube.',
+          description: 'Calculadora científica inteligente con historial en la nube.',
           start_url: location.href,
+          scope: './',
           display: 'standalone',
           orientation: 'portrait',
-          background_color: '#F8F7FF',
+          background_color: '#6C63FF',
           theme_color: '#6C63FF',
           icons: [
-            {
-              src: 'data:image/svg+xml,' + encodeURIComponent(
-                '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">' +
-                '<rect width="192" height="192" rx="40" fill="#6C63FF"/>' +
-                '<text x="96" y="125" text-anchor="middle" font-family="system-ui" ' +
-                'font-size="90" font-weight="900" fill="white">✦</text>' +
-                '</svg>'
-              ),
-              sizes: '192x192',
-              type: 'image/svg+xml',
-              purpose: 'any maskable'
-            }
+            { src: png192 || 'icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any maskable' },
+            { src: png512 || 'icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' }
           ]
         };
-        var blob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
-        var url  = URL.createObjectURL(blob);
-        var link = document.createElement('link');
-        link.rel  = 'manifest';
-        link.href = url;
-        document.head.appendChild(link);
-      } catch (e) {
-        console.warn('[PWA] No se pudo inyectar manifest:', e.message);
+
+        var blob = new Blob([JSON.stringify(manifestObj)], { type: 'application/json' });
+        var manifestLink = document.createElement('link');
+        manifestLink.rel = 'manifest';
+        manifestLink.href = URL.createObjectURL(blob);
+        document.head.appendChild(manifestLink);
+      } catch (err) { }
+
+      // ── Registro de Service Worker para Android Chrome PWA Audit ──
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js').catch(function () { });
       }
-    })();
 
-    // ─── State ────────────────────────────────────────────────────
-    let currentUser    = null;
-    let expression     = '';
-    let lastResult     = null;
-    let historialLocal = [];
+      // ── Control del Banner e Instalador PWA ──────────────────────
+      var banner = document.getElementById('pwa-banner');
+      var btnInstall = document.getElementById('btn-install');
+      var btnDismiss = document.getElementById('btn-dismiss');
+      var modalOverlay = document.getElementById('install-modal-overlay');
+      var modalClose = document.getElementById('modal-close');
+      var btnModalOk = document.getElementById('btn-modal-ok');
+      var modalSteps = document.getElementById('modal-steps');
+      var deferredPrompt = null;
 
-    // ─── DOM refs ─────────────────────────────────────────────────
-    const screenLoading = document.getElementById('screen-loading');
-    const screenAuth    = document.getElementById('screen-auth');
-    const screenApp     = document.getElementById('screen-app');
-    const memphistBg    = document.getElementById('memphis-bg');
+      var isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
 
-    const formLogin    = document.getElementById('form-login');
-    const formRegister = document.getElementById('form-register');
-    const loginForm    = document.getElementById('login-form');
-    const registerForm = document.getElementById('register-form');
-
-    const calcExpr   = document.getElementById('calc-expression');
-    const calcResult = document.getElementById('calc-result');
-    const btnSave    = document.getElementById('btn-save-calc');
-
-    const historyList        = document.getElementById('history-list');
-    const drawerHistoryList  = document.getElementById('drawer-history-list');
-    const historyCount       = document.getElementById('history-count');
-    const drawerHistoryCount = document.getElementById('drawer-history-count');
-    const historyDrawer      = document.getElementById('history-drawer');
-    const drawerOverlay      = document.getElementById('drawer-overlay');
-
-    // ─── Toast ────────────────────────────────────────────────────
-    function showToast(msg, type = '') {
-      const tc = document.getElementById('toast-container');
-      const t  = document.createElement('div');
-      t.className = 'toast ' + type;
-      t.textContent = msg;
-      tc.appendChild(t);
-      setTimeout(() => {
-        t.style.opacity = '0';
-        t.style.transform = 'translateY(8px) scale(.95)';
-        t.style.transition = 'all .25s ease';
-        setTimeout(() => t.remove(), 280);
-      }, 3000);
-    }
-
-    // ─── Button loading state ─────────────────────────────────────
-    function setLoading(btn, loading) {
-      const label = btn.querySelector('.btn-label');
-      if (loading) {
-        btn.disabled = true;
-        if (!btn.querySelector('.spinner-sm')) {
-          const sp = document.createElement('div');
-          sp.className = 'spinner-sm';
-          btn.insertBefore(sp, btn.firstChild);
-        }
-        if (label) label.style.opacity = '.6';
-      } else {
-        btn.disabled = false;
-        const sp = btn.querySelector('.spinner-sm');
-        if (sp) sp.remove();
-        if (label) label.style.opacity = '1';
+      // Mostrar banner en móviles no instalados
+      if (!isStandalone) {
+        banner.style.display = 'flex';
       }
-    }
 
-    // ─── Screen navigation ────────────────────────────────────────
-    function showScreen(name) {
-      // Hide all screens
-      [screenAuth, screenApp].forEach(s => {
-        s.classList.remove('active');
-        s.style.display = 'none';
+      window.addEventListener('beforeinstallprompt', function (e) {
+        e.preventDefault();
+        deferredPrompt = e;
+        banner.style.display = 'flex';
       });
-      // Show target
-      if (name === 'auth') {
-        screenAuth.classList.add('active');
-        screenAuth.style.display = '';
-        memphistBg.style.display = 'block';
-      } else if (name === 'app') {
-        screenApp.classList.add('active');
-        screenApp.style.display = '';
-        memphistBg.style.display = 'none';
-      }
-    }
 
-    // ─── Dismiss loading screen ───────────────────────────────────
-    function dismissLoading() {
-      screenLoading.classList.add('fade-out');
-      setTimeout(() => {
-        screenLoading.style.display = 'none';
-      }, 520);
-    }
-
-    // ─── Session persistence ──────────────────────────────────────
-    // In-memory fallback cuando sessionStorage está bloqueado en iframe
-    let _memSession = null;
-
-    function saveSession(user) {
-      _memSession = user;
-      try { sessionStorage.setItem('calcUser', JSON.stringify(user)); } catch(_) {}
-    }
-    function loadSession() {
-      if (_memSession) return _memSession;
-      try { return JSON.parse(sessionStorage.getItem('calcUser')); } catch(_) { return null; }
-    }
-    function clearSession() {
-      _memSession = null;
-      try { sessionStorage.removeItem('calcUser'); } catch(_) {}
-    }
-
-    // ─── GAS calls ────────────────────────────────────────────────
-    function gasCall(fn, ...args) {
-      return new Promise((resolve, reject) => {
-        if (typeof google === 'undefined' || !google.script || !google.script.run) {
-          return reject(new Error(
-            'google.script.run no disponible.\n' +
-            'Accedé desde la URL de la Web App desplegada, no desde el editor de GAS.'
-          ));
-        }
-
-        const timeoutId = setTimeout(() => {
-          reject(new Error('Tiempo de espera agotado (20s). Verificá tu conexión.'));
-        }, 20000);
-
-        google.script.run
-          .withSuccessHandler(result => { clearTimeout(timeoutId); resolve(result); })
-          .withFailureHandler(err    => { clearTimeout(timeoutId); reject(err); })
-          [fn](...args);
-      });
-    }
-
-    // ─── Inline form errors ───────────────────────────────────────
-    function showFormError(id, msg) {
-      const el = document.getElementById(id);
-      if (!el) return;
-      el.textContent = msg;
-      el.classList.remove('hidden');
-    }
-    function clearFormError(id) {
-      const el = document.getElementById(id);
-      if (el) { el.textContent = ''; el.classList.add('hidden'); }
-    }
-
-    // ─── Auth: switch panels ──────────────────────────────────────
-    function switchToPanel(show, hide, clearIds) {
-      clearIds.forEach(clearFormError);
-      hide.classList.add('hidden');
-      show.classList.remove('hidden');
-      show.classList.add('entering');
-      setTimeout(() => show.classList.remove('entering'), 300);
-      // Focus first input
-      const first = show.querySelector('input');
-      if (first) setTimeout(() => first.focus(), 50);
-    }
-
-    document.getElementById('switch-to-register').addEventListener('click', () => {
-      switchToPanel(formRegister, formLogin, ['login-error', 'register-error']);
-    });
-    document.getElementById('switch-to-login').addEventListener('click', () => {
-      switchToPanel(formLogin, formRegister, ['login-error', 'register-error']);
-    });
-    // Keyboard accessible
-    document.getElementById('switch-to-register').addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') e.target.click(); });
-    document.getElementById('switch-to-login').addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') e.target.click(); });
-
-    // ─── Login form ───────────────────────────────────────────────
-    loginForm.addEventListener('submit', async function(e) {
-      e.preventDefault();
-      clearFormError('login-error');
-      const email    = document.getElementById('login-email').value.trim();
-      const password = document.getElementById('login-password').value;
-
-      if (!email || !password) {
-        showFormError('login-error', 'Completá todos los campos.');
-        return;
-      }
-
-      const btn = document.getElementById('btn-login');
-      setLoading(btn, true);
-      try {
-        const res = await gasCall('login', email, password);
-        if (res.ok) {
-          currentUser = res.user;
-          saveSession(currentUser);
-          clearFormError('login-error');
-          enterApp();
+      function showModalGuide() {
+        var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        if (isIOS) {
+          modalSteps.innerHTML =
+            '<div class="step-item"><div class="step-num">1</div><div>Toca el botón <strong>Compartir (⎋)</strong> en la barra inferior de Safari.</div></div>' +
+            '<div class="step-item"><div class="step-num">2</div><div>Desplázate hacia abajo y selecciona <strong>"Agregar al inicio (➕)"</strong>.</div></div>' +
+            '<div class="step-item"><div class="step-num">3</div><div>Presiona <strong>"Agregar"</strong> arriba a la derecha.</div></div>';
         } else {
-          showFormError('login-error', res.message || 'Email o contraseña incorrectos.');
+          modalSteps.innerHTML =
+            '<div class="step-item"><div class="step-num">1</div><div>Toca el menú de opciones <strong>(tres puntos ⋮)</strong> arriba a la derecha en Chrome.</div></div>' +
+            '<div class="step-item"><div class="step-num">2</div><div>Selecciona <strong>"Instalar aplicación"</strong> o <strong>"Agregar a la pantalla principal"</strong>.</div></div>' +
+            '<div class="step-item"><div class="step-num">3</div><div>Confirma en <strong>"Instalar"</strong> para tenerla como app nativa.</div></div>';
         }
-      } catch (err) {
-        showFormError('login-error', err?.message || 'Error de conexión. Intentá de nuevo.');
-        console.error('[Login]', err);
-      } finally {
-        setLoading(btn, false);
-      }
-    });
-
-    // ─── Register form ────────────────────────────────────────────
-    registerForm.addEventListener('submit', async function(e) {
-      e.preventDefault();
-      clearFormError('register-error');
-      const nombre   = document.getElementById('reg-nombre').value.trim();
-      const email    = document.getElementById('reg-email').value.trim();
-      const password = document.getElementById('reg-password').value;
-
-      if (!nombre || !email || !password) {
-        showFormError('register-error', 'Completá todos los campos.');
-        return;
-      }
-      if (password.length < 6) {
-        showFormError('register-error', 'La contraseña debe tener al menos 6 caracteres.');
-        return;
+        modalOverlay.style.display = 'flex';
       }
 
-      const btn = document.getElementById('btn-register');
-      setLoading(btn, true);
-      try {
-        const res = await gasCall('register', nombre, email, password);
-        if (res.ok) {
-          currentUser = res.user;
-          saveSession(currentUser);
-          showToast('¡Cuenta creada! 🎉', 'success');
-          enterApp();
-        } else {
-          showFormError('register-error', res.message || 'No se pudo crear la cuenta.');
-        }
-      } catch (err) {
-        showFormError('register-error', err?.message || 'Error de conexión. Intentá de nuevo.');
-        console.error('[Register]', err);
-      } finally {
-        setLoading(btn, false);
-      }
-    });
-
-    // ─── Enter App ────────────────────────────────────────────────
-    function enterApp() {
-      showScreen('app');
-      const name = currentUser?.nombre || 'Usuario';
-      document.getElementById('user-name-display').textContent = name;
-      document.getElementById('user-avatar').textContent = name.charAt(0).toUpperCase();
-      loadHistorial();
-    }
-
-    // ─── Logout ───────────────────────────────────────────────────
-    document.getElementById('btn-logout').addEventListener('click', () => {
-      clearSession();
-      currentUser    = null;
-      expression     = '';
-      lastResult     = null;
-      historialLocal = [];
-      updateDisplay();
-      showScreen('auth');
-      showToast('Sesión cerrada');
-    });
-
-    // ─── Calculator logic ─────────────────────────────────────────
-    function updateDisplay() {
-      calcExpr.textContent   = expression || '';
-      calcResult.textContent = lastResult !== null ? String(lastResult) : '0';
-    }
-
-    /**
-     * Evalúa una expresión de calculadora de forma segura.
-     * Reemplaza símbolos de display por equivalentes JS/Math.
-     */
-    function safeEval(expr) {
-      // 1. Sustituir símbolos de display por JS
-      let js = expr
-        .replace(/÷/g, '/')
-        .replace(/×/g, '*')
-        .replace(/−/g, '-')
-        .replace(/π/g, String(Math.PI))
-        .replace(/sin\(/g, 'Math.sin(')
-        .replace(/cos\(/g, 'Math.cos(')
-        .replace(/tan\(/g, 'Math.tan(')
-        .replace(/sqrt\(/g, 'Math.sqrt(')
-        .replace(/log\(/g, 'Math.log10(')
-        .replace(/ln\(/g, 'Math.log(')
-        .replace(/\^/g, '**');
-
-      // 2. Validar: solo caracteres numéricos y operadores permitidos
-      //    Primero quitamos los tokens Math.* conocidos para validar el resto
-      const stripped = js
-        .replace(/Math\.(sin|cos|tan|sqrt|log10|log|PI)\b/g, '')
-        .replace(/\d+(\.\d+)?(e[+-]?\d+)?/gi, '')  // números (incl. notación científica)
-        .replace(/[+\-*/()%\s.]/g, '');             // operadores y espacios
-
-      if (stripped.length > 0) {
-        // Quedan caracteres no reconocidos → expresión inválida
-        return 'Error';
-      }
-
-      // 3. Evaluar con Function() en strict mode
-      try {
-        // eslint-disable-next-line no-new-func
-        const result = Function('"use strict"; return (' + js + ')')();
-        if (typeof result !== 'number' || !isFinite(result)) return 'Error';
-        // Redondear ruido de punto flotante (hasta 12 cifras significativas)
-        return parseFloat(result.toPrecision(12));
-      } catch (e) {
-        return 'Error';
-      }
-    }
-
-    function handleKey(action, val, fn) {
-      switch (action) {
-        case 'input':
-          expression += val;
-          break;
-        case 'clear':
-          expression = '';
-          lastResult = null;
-          btnSave.disabled = true;
-          break;
-        case 'backspace':
-          // Backspace inteligente: borra funciones enteras (sin, cos, etc.)
-          const fnMatch = expression.match(/(sin|cos|tan|sqrt|log10|log|ln)\($/)
-          if (fnMatch) {
-            expression = expression.slice(0, -fnMatch[0].length);
-          } else {
-            expression = expression.slice(0, -1);
-          }
-          break;
-        case 'equals':
-          if (!expression) return;
-          const result = safeEval(expression);
-          lastResult = result;
-          if (result !== 'Error') {
-            calcResult.classList.add('flash');
-            setTimeout(() => calcResult.classList.remove('flash'), 380);
-            btnSave.disabled = false;
-          } else {
-            btnSave.disabled = true;
-            showToast('Expresión inválida', 'error');
-          }
-          break;
-        case 'fn':
-          if (fn === 'pow') {
-            expression += '^2';
-          } else {
-            expression += fn + '(';
-          }
-          break;
-        case 'pi':
-          expression += 'π';
-          break;
-      }
-      updateDisplay();
-    }
-
-    // Keypad click delegation
-    document.querySelector('.calc-keypad').addEventListener('click', e => {
-      const key = e.target.closest('.key');
-      if (!key) return;
-      handleKey(key.dataset.action, key.dataset.val, key.dataset.fn);
-    });
-
-    // Keyboard support
-    document.addEventListener('keydown', e => {
-      if (!screenApp.classList.contains('active')) return;
-      const map = {
-        '0':'0','1':'1','2':'2','3':'3','4':'4',
-        '5':'5','6':'6','7':'7','8':'8','9':'9',
-        '+':'+', '-':'−', '*':'×', '/':'÷', '%':'%',
-        '.':'.', '(':  '(', ')': ')',
-        'Enter':'equals', '=':'equals',
-        'Backspace':'backspace', 'Escape':'clear'
-      };
-      const action = map[e.key];
-      if (!action) return;
-      e.preventDefault();
-      if (['equals','backspace','clear'].includes(action)) {
-        handleKey(action);
-      } else {
-        handleKey('input', action);
-      }
-    });
-
-    // ─── Save Calculation ─────────────────────────────────────────
-    const SAVE_SVG = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-      stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/>
-      <polyline points="17 21 17 13 7 13 7 21"/>
-      <polyline points="7 3 7 8 15 8"/>
-    </svg> Guardar cálculo`;
-
-    btnSave.addEventListener('click', async () => {
-      if (lastResult === null || lastResult === 'Error' || !expression) return;
-
-      const calculo   = expression;
-      const resultado = String(lastResult);
-      const userId    = currentUser.id;
-      const snapshot  = JSON.stringify(
-        historialLocal.slice(0, 10).map(h => ({ c: h.calculo, r: h.resultado }))
-      );
-
-      btnSave.disabled = true;
-      btnSave.innerHTML = '<div class="spinner-sm" style="border-color:rgba(0,0,0,.2);border-top-color:#333"></div> Guardando…';
-
-      try {
-        const res = await gasCall('saveCalculo', calculo, resultado, userId, snapshot);
-        if (res.ok) {
-          showToast('Cálculo guardado ✓', 'success');
-          historialLocal.unshift({
-            id: res.id,
-            calculo,
-            resultado,
-            dateTime: res.dateTime || new Date().toISOString()
+      btnInstall.addEventListener('click', function () {
+        if (deferredPrompt) {
+          deferredPrompt.prompt();
+          deferredPrompt.userChoice.then(function (result) {
+            if (result.outcome === 'accepted') banner.style.display = 'none';
+            deferredPrompt = null;
           });
-          renderHistory();
-          expression = '';
-          lastResult = null;
-          updateDisplay();
         } else {
-          showToast(res.message || 'Error al guardar', 'error');
-          btnSave.disabled = false;
+          // Si el navegador no disparó antes el prompt automático, se muestra la guía visual
+          showModalGuide();
         }
-      } catch (err) {
-        showToast('Error de conexión', 'error');
-        btnSave.disabled = false;
-        console.error('[save]', err);
-      } finally {
-        btnSave.innerHTML = SAVE_SVG;
-      }
-    });
-
-    // ─── Historial ────────────────────────────────────────────────
-    async function loadHistorial() {
-      historyList.innerHTML = `
-        <div class="history-loading">
-          <div class="spinner"></div>
-          <span>Cargando historial…</span>
-        </div>`;
-      drawerHistoryList.innerHTML = historyList.innerHTML;
-
-      try {
-        const res = await gasCall('getHistorial', currentUser.id);
-        if (res.ok) {
-          historialLocal = res.calculos || [];
-          renderHistory();
-        } else {
-          throw new Error(res.message || 'Error desconocido');
-        }
-      } catch (e) {
-        console.error('[historial]', e);
-        const errMsg = `<div class="history-empty">
-          <div class="history-empty-title">No se pudo cargar</div>
-          <div class="history-empty-desc">${escapeHtml(e?.message || 'Error de conexión')}</div>
-        </div>`;
-        historyList.innerHTML = errMsg;
-        drawerHistoryList.innerHTML = errMsg;
-      }
-    }
-
-    function renderHistory() {
-      const count = historialLocal.length;
-      historyCount.textContent       = count;
-      drawerHistoryCount.textContent = count;
-
-      if (count === 0) {
-        const empty = buildEmptyState();
-        historyList.innerHTML       = empty;
-        drawerHistoryList.innerHTML = empty;
-        return;
-      }
-
-      const html = historialLocal.map((h, i) => historyItemHTML(h, i)).join('');
-      historyList.innerHTML       = html;
-      drawerHistoryList.innerHTML = html;
-
-      // Staggered entrance animation
-      [historyList, drawerHistoryList].forEach(list => {
-        list.querySelectorAll('.history-item').forEach((el, i) => {
-          el.style.animationDelay = (i * 40) + 'ms';
-          el.classList.add('animate-in');
-        });
       });
 
-      // Click to restore
-      [historyList, drawerHistoryList].forEach(list => {
-        list.querySelectorAll('.history-item').forEach((el, i) => {
-          el.addEventListener('click', e => {
-            // Don't restore if delete button was clicked
-            if (e.target.closest('.history-del-btn')) return;
-            expression  = historialLocal[i].calculo;
-            lastResult  = historialLocal[i].resultado;
-            btnSave.disabled = false;
-            updateDisplay();
-            showToast('Cálculo restaurado ↩');
-            closeDrawer();
-          });
+      btnDismiss.addEventListener('click', function () { banner.style.display = 'none'; });
+      modalClose.addEventListener('click', function () { modalOverlay.style.display = 'none'; });
+      btnModalOk.addEventListener('click', function () { modalOverlay.style.display = 'none'; });
 
-          // Delete button
-          const delBtn = el.querySelector('.history-del-btn');
-          if (delBtn) {
-            delBtn.addEventListener('click', async e => {
-              e.stopPropagation();
-              const item = historialLocal[i];
-              if (!item) return;
-              delBtn.innerHTML = '…';
-              delBtn.disabled  = true;
-              try {
-                const res = await gasCall('deleteCalculo', item.id, currentUser.id);
-                if (res.ok) {
-                  historialLocal.splice(i, 1);
-                  renderHistory();
-                  showToast('Eliminado', 'success');
-                } else {
-                  showToast(res.message || 'Error al eliminar', 'error');
-                  delBtn.innerHTML = '✕';
-                  delBtn.disabled  = false;
-                }
-              } catch (err) {
-                showToast('Error de conexión', 'error');
-                delBtn.innerHTML = '✕';
-                delBtn.disabled  = false;
-              }
-            });
-          }
-        });
+      window.addEventListener('appinstalled', function () {
+        banner.style.display = 'none';
       });
     }
 
-    function buildEmptyState() {
-      return `
-        <div class="history-empty">
-          <svg class="history-empty-illo" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-            <!-- Empty state: Corporate Memphis mini illustration -->
-            <circle cx="60" cy="60" r="50" fill="#EAE8FF" opacity=".6"/>
-            <!-- Calculator outline -->
-            <rect x="35" y="30" width="50" height="60" rx="10" fill="white" stroke="#C9C0FF" stroke-width="2.5"/>
-            <!-- Screen -->
-            <rect x="42" y="38" width="36" height="18" rx="5" fill="#EAE8FF"/>
-            <rect x="46" y="43" width="20" height="4" rx="2" fill="#6C63FF" opacity=".5"/>
-            <!-- Buttons -->
-            <circle cx="47" cy="68" r="4" fill="#FFD3B6"/>
-            <circle cx="60" cy="68" r="4" fill="#A8E6CF"/>
-            <circle cx="73" cy="68" r="4" fill="#C9C0FF"/>
-            <circle cx="47" cy="80" r="4" fill="#C9C0FF"/>
-            <circle cx="60" cy="80" r="4" fill="#C9C0FF"/>
-            <circle cx="73" cy="80" r="4" fill="#6C63FF"/>
-            <!-- Decorative elements -->
-            <circle cx="25" cy="25" r="8" fill="#FF6B6B" opacity=".4"/>
-            <polygon points="95,85 103,100 87,100" fill="#FFE566" opacity=".6"/>
-            <!-- Question mark on screen -->
-            <text x="60" y="54" text-anchor="middle" font-family="system-ui" font-size="11" font-weight="700" fill="#6C63FF">0</text>
-          </svg>
-          <div class="history-empty-title">Sin cálculos aún</div>
-          <div class="history-empty-desc">Hacé un cálculo y presioná<br>"Guardar" para verlo aquí.</div>
-        </div>`;
-    }
-
-    function historyItemHTML(h, idx) {
-      const date = h.dateTime
-        ? new Date(h.dateTime).toLocaleString('es-AR', {
-            day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'
-          })
-        : '';
-      const rawExpr = String(h.calculo);
-      const expr    = rawExpr.length > 32 ? rawExpr.slice(0, 32) + '…' : rawExpr;
-
-      return `
-        <div class="history-item" tabindex="0" role="button"
-             aria-label="Restaurar: ${escapeHtml(rawExpr)} = ${escapeHtml(String(h.resultado))}">
-          <div class="history-item-top">
-            <div class="history-expr">${escapeHtml(expr)}</div>
-            <button class="history-del-btn" aria-label="Eliminar cálculo" title="Eliminar">✕</button>
-          </div>
-          <div class="history-res">= ${escapeHtml(String(h.resultado))}</div>
-          <div class="history-date">${escapeHtml(date)}</div>
-        </div>`;
-    }
-
-    function escapeHtml(str) {
-      return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;');
-    }
-
-    // ─── Mobile Drawer ────────────────────────────────────────────
-    document.getElementById('btn-toggle-history').addEventListener('click', () => {
-      historyDrawer.classList.add('open');
-      document.body.style.overflow = 'hidden';
-    });
-    drawerOverlay.addEventListener('click', closeDrawer);
-
-    function closeDrawer() {
-      historyDrawer.classList.remove('open');
-      document.body.style.overflow = '';
-    }
-
-    // Swipe down to close drawer
-    let touchStartY = 0;
-    document.querySelector('.drawer-panel').addEventListener('touchstart', e => {
-      touchStartY = e.touches[0].clientY;
-    }, { passive: true });
-    document.querySelector('.drawer-panel').addEventListener('touchend', e => {
-      if (e.changedTouches[0].clientY - touchStartY > 60) closeDrawer();
-    }, { passive: true });
-
-    // ─── Init ─────────────────────────────────────────────────────
-    function init() {
-      // Minimum loading display time for UX polish
-      const minLoadMs = 1400;
-      const startTime = Date.now();
-
-      try {
-        const saved = loadSession();
-        if (saved && saved.id && saved.nombre) {
-          currentUser = saved;
-          const elapsed = Date.now() - startTime;
-          const wait    = Math.max(0, minLoadMs - elapsed);
-          setTimeout(() => {
-            dismissLoading();
-            enterApp();
-          }, wait);
-        } else {
-          clearSession();
-          const elapsed = Date.now() - startTime;
-          const wait    = Math.max(0, minLoadMs - elapsed);
-          setTimeout(() => {
-            dismissLoading();
-            showScreen('auth');
-          }, wait);
-        }
-      } catch (err) {
-        console.error('[init]', err);
-        clearSession();
-        setTimeout(() => {
-          dismissLoading();
-          showScreen('auth');
-        }, minLoadMs);
-      }
-    }
-
-    init();
-
-  })();
+    // Prevenir scroll elástico en iOS
+    document.addEventListener('touchmove', function (e) {
+      if (e.target === document.body) e.preventDefault();
+    }, { passive: false });
   </script>
 
 </body>
+
 </html>

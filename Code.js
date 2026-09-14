@@ -18,15 +18,15 @@ function getCalcSheet()   { return getSS().getSheetByName('calculos'); }
 
 // ── Punto de entrada HTTP ─────────────────────────────────
 /**
- * Sirve la PWA (index.html) como Web App.
+ * Sirve la PWA (home.html) como Web App.
  * - IFRAME sandbox: permite PWA features, localStorage, etc.
  * - ALLOWALL: permite embeber en Google Sites u otros frames.
  */
 function doGet(e) {
   // Nota: addMetaTag() solo acepta 'viewport' en HtmlService.
-  // El resto de meta tags (PWA, Apple, theme-color) están en el <head> de index.html.
+  // El resto de meta tags (PWA, Apple, theme-color) están en el <head> de home.html.
   return HtmlService
-    .createHtmlOutputFromFile('index')
+    .createHtmlOutputFromFile('home')
     .setTitle('Calcula · App')
     .setSandboxMode(HtmlService.SandboxMode.IFRAME)
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
@@ -71,9 +71,10 @@ function testConnection() {
  * Hashea un string con SHA-256 y retorna hex string.
  */
 function hashPassword(plain) {
+  if (!plain) return '';
   var bytes = Utilities.computeDigest(
     Utilities.DigestAlgorithm.SHA_256,
-    plain,
+    String(plain),
     Utilities.Charset.UTF_8
   );
   return bytes.map(function(b) {
@@ -86,6 +87,39 @@ function hashPassword(plain) {
  */
 function generateId() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+}
+
+/**
+ * Busca un valor en un objeto de fila probando múltiples nombres de columna posibles
+ * (insensible a mayúsculas/minúsculas y acentos).
+ */
+function getProp(obj, keys) {
+  if (!obj) return '';
+  var objKeys = Object.keys(obj);
+
+  // 1. Coincidencia directa por lista de claves
+  for (var k = 0; k < keys.length; k++) {
+    var val = obj[keys[k]];
+    if (val !== undefined && val !== null && String(val).trim() !== '') {
+      return String(val).trim();
+    }
+  }
+
+  // 2. Coincidencia flexible (insensible a mayúsculas/minúsculas y acentos)
+  for (var i = 0; i < objKeys.length; i++) {
+    var cleanKey = String(objKeys[i]).toLowerCase().trim()
+      .replace(/ñ/g, 'n').replace(/á|é|í|ó|ú/g, 'a');
+    for (var j = 0; j < keys.length; j++) {
+      var cleanTarget = String(keys[j]).toLowerCase().trim()
+        .replace(/ñ/g, 'n').replace(/á|é|í|ó|ú/g, 'a');
+      if (cleanKey === cleanTarget) {
+        var v = obj[objKeys[i]];
+        if (v !== undefined && v !== null) return String(v).trim();
+      }
+    }
+  }
+
+  return '';
 }
 
 /**
@@ -123,7 +157,11 @@ function getColumnMap(sheet) {
  */
 function register(nombre, email, password) {
   try {
-    var sheet    = getLoginSheet();
+    var sheet = getLoginSheet();
+    if (!sheet) {
+      return { ok: false, message: 'La hoja "login" no existe en la planilla de Google Sheets.' };
+    }
+
     var users    = sheetToObjects(sheet);
     var emailLow = String(email).toLowerCase().trim();
 
@@ -134,18 +172,24 @@ function register(nombre, email, password) {
       return { ok: false, message: 'La contraseña debe tener al menos 6 caracteres.' };
     }
 
-    // Verificar duplicado — una sola iteración (eficiente)
+    // Verificar duplicado (soporta mail, mai, email, correo)
     var exists = users.some(function(u) {
-      return String(u['mail'] || u['mai'] || '').toLowerCase().trim() === emailLow;
+      var uMail = getProp(u, ['mail', 'mai', 'email', 'correo']).toLowerCase();
+      return uMail === emailLow;
     });
     if (exists) {
-      return { ok: false, message: 'El email ya está registrado.' };
+      return { ok: false, message: 'El email ya está registrado. Probá iniciar sesión.' };
     }
 
     var id   = generateId();
     var hash = hashPassword(String(password));
 
-    // id | nombre | mail | contraseña
+    // Si la hoja está totalmente vacía, insertar fila de encabezados
+    if (sheet.getLastRow() === 0) {
+      sheet.appendRow(['id', 'nombre', 'mail', 'contraseña']);
+    }
+
+    // Insertar nuevo usuario
     sheet.appendRow([id, String(nombre).trim(), emailLow, hash]);
 
     return {
@@ -162,36 +206,53 @@ function register(nombre, email, password) {
 
 /**
  * Inicia sesión con email y contraseña.
+ * Soporta contraseñas con hash SHA-256 y en texto plano (retrocompatibilidad).
  * Retorna { ok, message, user }
  */
 function login(email, password) {
   try {
-    var sheet    = getLoginSheet();
-    var users    = sheetToObjects(sheet);
-    var emailLow = String(email).toLowerCase().trim();
-    var hash     = hashPassword(String(password));
+    var sheet = getLoginSheet();
+    if (!sheet) {
+      return { ok: false, message: 'La hoja "login" no existe en la planilla de Google Sheets.' };
+    }
+
+    var users     = sheetToObjects(sheet);
+    var emailLow  = String(email).toLowerCase().trim();
+    var plainPass = String(password).trim();
+    var hashPass  = hashPassword(plainPass);
 
     var found = null;
+    var foundRowIndex = -1;
+
     for (var i = 0; i < users.length; i++) {
-      // Compatibilidad: acepta columna "mail" o "mai" (typo legacy)
-      var userEmail = String(users[i]['mail'] || users[i]['mai'] || '').toLowerCase().trim();
-      if (userEmail === emailLow && String(users[i]['contraseña']) === hash) {
-        found = users[i];
-        break;
+      var uMail = getProp(users[i], ['mail', 'mai', 'email', 'correo']).toLowerCase();
+      var uPass = getProp(users[i], ['contraseña', 'contrasenia', 'contrasena', 'password', 'pass', 'clave']);
+
+      // Coincidencia de email
+      if (uMail === emailLow) {
+        // Coincidencia por HASH o por TEXTO PLANO
+        if (uPass === hashPass || uPass === plainPass) {
+          found = users[i];
+          break;
+        }
       }
     }
 
     if (!found) {
-      return { ok: false, message: 'Email o contraseña incorrectos.' };
+      return { ok: false, message: 'Email o contraseña incorrectos. Si no tenés cuenta, registrate gratis.' };
     }
+
+    var userId   = getProp(found, ['id', 'ID']) || generateId();
+    var userName = getProp(found, ['nombre', 'name', 'usuario']) || emailLow.split('@')[0];
+    var userMail = getProp(found, ['mail', 'mai', 'email', 'correo']) || emailLow;
 
     return {
       ok: true,
       message: 'Sesión iniciada.',
       user: {
-        id:     String(found['id']),
-        nombre: String(found['nombre']),
-        email:  String(found['mail'] || found['mai'] || emailLow)
+        id:     userId,
+        nombre: userName,
+        email:  userMail
       }
     };
 
